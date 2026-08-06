@@ -1,0 +1,12 @@
+[
+  {
+    "id": "app-ideas",
+    "name": "App Ideas",
+    "desc": "12 mass-market + 14 vertical app ideas, fully planned",
+    "type": "md",
+    "target": "content/app-ideas.md",
+    "img": "assets/img/app-ideas.jpg",
+    "favorite": true,
+    "added": "2026-08-06"
+  }
+]
