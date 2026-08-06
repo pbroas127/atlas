@@ -6,10 +6,11 @@
  * into data/items.json if you want a change to be permanent across devices.
  */
 
-const STORE = 'atlas:v1';
+const STORE = 'atlas:v2';
 const SEED = 'data/items.json';
 
 let items = [];
+let deleted = [];   // ids the user removed, so the seed doesn't resurrect them
 let query = '';
 
 /* ---------- icons ---------- */
@@ -23,32 +24,59 @@ const I = {
 
 /* ---------- storage ---------- */
 
+/* Always re-read the committed seed and merge anything new into the saved
+ * state. Without this, a browser that loaded the site once would never see
+ * an item added to data/items.json again — the whole point of committing one.
+ *
+ * Local edits win for items that already exist; genuinely new ids get added;
+ * ids the user deleted stay deleted. */
 async function load() {
   const saved = localStorage.getItem(STORE);
   if (saved) {
     try {
-      items = JSON.parse(saved);
-      return;
+      const state = JSON.parse(saved);
+      if (Array.isArray(state)) {           // v1 format was a bare array
+        items = state;
+      } else {
+        items = state.items || [];
+        deleted = state.deleted || [];
+      }
     } catch (e) {
       console.warn('Bad saved state, reseeding', e);
     }
   }
-  await reseed();
-}
 
-async function reseed() {
-  try {
-    const res = await fetch(SEED, { cache: 'no-store' });
-    items = await res.json();
-  } catch (e) {
-    console.error('Could not load seed', e);
-    items = [];
+  const seed = await fetchSeed();
+
+  if (!items.length && !deleted.length) {
+    items = seed;                            // first ever visit
+  } else {
+    const known = new Set(items.map(i => i.id));
+    const gone = new Set(deleted);
+    const fresh = seed.filter(s => !known.has(s.id) && !gone.has(s.id));
+    if (fresh.length) items = [...fresh, ...items];
   }
   save();
 }
 
+async function fetchSeed() {
+  try {
+    const res = await fetch(SEED, { cache: 'no-store' });
+    return await res.json();
+  } catch (e) {
+    console.error('Could not load seed', e);
+    return [];
+  }
+}
+
+async function reseed() {
+  items = await fetchSeed();
+  deleted = [];
+  save();
+}
+
 function save() {
-  localStorage.setItem(STORE, JSON.stringify(items));
+  localStorage.setItem(STORE, JSON.stringify({ items, deleted }));
 }
 
 /* ---------- helpers ---------- */
@@ -231,6 +259,7 @@ function delItem(it) {
     fields: [],
     onSave() {
       items = items.filter(x => x.id !== it.id);
+      if (!deleted.includes(it.id)) deleted.push(it.id);   // don't let the seed bring it back
       save(); render(); toast('Deleted — hit Reset to restore defaults');
     }
   });
