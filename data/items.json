@@ -8,5 +8,15 @@
     "img": "assets/img/app-ideas.jpg",
     "favorite": true,
     "added": "2026-08-06"
+  },
+  {
+    "id": "berner-training-plan",
+    "name": "Berner Training Plan",
+    "desc": "10 cues, leash fear protocol, 8-week schedule",
+    "type": "md",
+    "target": "content/berner-training-plan.md",
+    "img": "assets/img/berner-training-plan.jpg",
+    "favorite": false,
+    "added": "2026-08-06"
   }
 ]
